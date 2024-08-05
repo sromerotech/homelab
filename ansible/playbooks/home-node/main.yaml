@@ -1,0 +1,100 @@
+- name: Setups K8S node
+  hosts: main
+  vars:
+    k3s_version: v1.29.5+k3s1
+  tasks:
+    - name: COMMON:Ping my hosts
+      ansible.builtin.ping:
+   
+    - name: COMMON:Update my hosts
+      become: true
+      apt:
+        upgrade: dist
+        autoclean: yes
+        autoremove: yes
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: COMMON:Install dependencies
+      become: true
+      apt:
+        package:
+          - ufw
+          - curl
+
+    - name: UFW:Set default incoming policy to deny
+      become: true
+      ufw:
+        direction: incoming
+        default: deny
+
+    - name: UFW:Set default outgoing policy to allow
+      become: true
+      ufw:
+        direction: outgoing
+        default: allow
+
+    - name: UFW:ssh
+      become: true
+      ufw:
+        rule: allow
+        port: 22
+        from: 192.168.1.0/24
+        comment: ssh
+
+    - name: UFW:k3s:apiserver
+      become: true
+      ufw:
+        rule: allow
+        port: 6443
+        from: 192.168.1.0/24
+        comment: k3s:apiserver
+
+    - name: UFW:k3s:pods
+      become: true
+      ufw:
+        rule: allow
+        from: 10.42.0.0/16
+        comment: k3s:pods
+
+    - name: UFW:k3s:services
+      become: true
+      ufw:
+        rule: allow
+        from: 10.43.0.0/16
+        comment: k3s:services
+
+    - name: UFW:enabled
+      become: true
+      ufw:
+        state: enabled
+
+    - name: K3S:Ensure the /etc/rancher/k3s/ directory exists
+      become: true
+      file:
+        path: /etc/rancher/k3s/
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+
+    - name: K3S:copy config file
+      copy:
+        src: files/k3s/config.yaml
+        dest: /etc/rancher/k3s/config.yaml
+        mode: '0644'
+
+    - name: K3S:install
+      shell: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s -
+
+    - name: K3S:get kubectl file
+      fetch: 
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: output/kubeconfig-{{ inventory_hostname }}.yaml
+        flat: true
+
+    - name: K3S:copy manifests
+      become: true
+      copy:
+        src: files/manifests/
+        dest: /var/lib/rancher/k3s/server/manifests/
