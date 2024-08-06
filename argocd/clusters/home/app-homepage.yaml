@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homepage
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    namespace: default
+  source:
+    chart: homepage
+    repoURL: https://jameswynn.github.io/helms-charts
+    targetRevision: 1.1.3
+    helm:
+      releaseName: my-homepage
+      valuesObject:
+        image:
+          repository: ghcr.io/gethomepage/homepage
+          tag: latest
+          pullPolicy: Always
+        enableRbac: true
+        serviceAccount:
+          create: true
+          name: homepage
+        config:
+          kubernetes:
+            mode: cluster
+          settings:
+            background: 
+              image: https://images.unsplash.com/photo-1500073584060-670c36a703f1?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
+              blur: sm # sm, "", md, xl... see https://tailwindcss.com/docs/backdrop-blur
+              saturate: 50 # 0, 50, 100... see https://tailwindcss.com/docs/backdrop-saturate
+              brightness: 75 # 0, 50, 75... see https://tailwindcss.com/docs/backdrop-brightness
+              opacity: 40 # 0-100
+          services:
+            - Home:
+              - Home Assistant:
+                  icon: home-assistant 
+                  href: http://ha.home
+                  description: Home Automation Hub
+                  # widget:
+                  #   type: homeassistant
+                  #   url: http://home-assistant.home-assistant.svc.cluster.local:8123
+                  #   key: ...
+            - Devops:  
+              - ArgoCD:
+                  icon: argocd
+                  href: http://argocd.home
+                  description: Continuous Delivery
+            - Internet:
+              - Router:
+                  icon: mdi-ip
+                  href: http://router.home
+                  description: ISP router
+              - PiHole:
+                  icon: mdi-web
+                  href: http://pihole.home
+                  description: DNS server
+                  # widget:
+                  #   type: pihole
+                  #   url: http://pihole.pihole.svc.cluster.local:8123
+                  #   version: 5 # required if running v6 or higher, defaults to 5
+                  #   key: ...
+          widgets:
+            - resources:
+                backend: kubernetes
+                expanded: true
+                cpu: true
+                memory: true
+          layout:
+            Internet:
+              style: row
+              columns: 2
+        ingress:
+          main:
+            enabled: true
+            ingressClassName: traefik
+            labels:
+              homepage/enabled: "true"
+            annotations:
+              homepage/name: "Homepage"
+              homepage/description: "A modern, secure, highly customizable application dashboard."
+              homepage/group: "My Group"
+              homepage/icon: "homepage.png"
+            hosts:
+              - host: &host "home.home"
+                paths:
+                  - path: /
+                    pathType: Prefix
