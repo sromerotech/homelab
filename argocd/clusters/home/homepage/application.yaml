@@ -30,13 +30,22 @@ spec:
         config:
           bookmarks:
             - Developer:
-              - Github:
+              - My Github:
                 - abbr: GH
-                  href: https://github.com/
+                  href: https://github.com/sromerotech
+              - Homelab repo:
+                - abbr: GH
+                  href: https://github.com/sromerotech/homelab
             - Social:
-              - Reddit:
+              - r/homelab:
                 - abbr: RE
-                  href: https://reddit.com/
+                  href: https://www.reddit.com/r/homelab/
+              - r/HomeServer:
+                - abbr: RE
+                  href: https://www.reddit.com/r/HomeServer/
+              - r/homeassistant:
+                - abbr: RE
+                  href: https://www.reddit.com/r/homeassistant/
             - Entertainment:
               - YouTube:
                 - abbr: YT
