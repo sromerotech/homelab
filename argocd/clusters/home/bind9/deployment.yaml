@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bind-deployment
+  labels:
+    app: bind
+    namespace: dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bind
+  template:
+    metadata:
+      labels:
+        app: bind
+    spec:
+      containers:
+        - name: bind
+          image: ubuntu/bind9:9.18-22.04_beta
+          resources: {}
+          env:
+            - name: DOCKER_LOGS
+              value: '1'
+            - name: ALLOW_QUERY
+              value: any
+            - name: TZ
+              value: UTC
+          ports:
+            - containerPort: 53

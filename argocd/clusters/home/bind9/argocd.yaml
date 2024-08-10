@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-bind9
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    namespace: dns
+    server: https://kubernetes.default.svc
+  source:
+    path:  argocd/clusters/home/bind9
+    repoURL: https://jameswynn.github.io/helm-charts
+    targetRevision: HEAD
+    
