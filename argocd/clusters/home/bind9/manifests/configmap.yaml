@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bind-cm
+  namespace: dns
+data:
+  named.conf: |
+    options {
+      forwarders {
+        8.8.8.8;
+        8.8.4.4;
+      };
+    };
+
+    zone "home" IN {
+      type master;
+      file "/etc/bind/home.zone";
+    };
+
+    # include "/etc/bind/named.conf.options";
+    # include "/etc/bind/named.conf.local";
+    # include "/etc/bind/named.conf.default-zones";
+  home.zone: |
+    $TTL    2d
+    $ORIGIN home.
+
+    @       IN    SOA   ns.home.  info.home.  (
+                        2024081001  ; serial
+                        12h         ; refresh
+                        15m         ; retry
+                        3w          ; expire
+                        2h          ; minimum ttl
+                        )
+            IN    NS    ns.home.
+    ns      IN    A     192.168.1.39
+
+    ; -- add dns records below
+
+    ; -- ISP router IP
+    router  IN    A     192.168.1.1
+
+    ; -- All other subdomains are resolved to the Kubernetes node, managed by Traefik
+    *       IN    A     192.168.1.39

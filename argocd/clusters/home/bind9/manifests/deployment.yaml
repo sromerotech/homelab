@@ -15,11 +15,15 @@ spec:
       labels:
         app: bind
     spec:
+      securityContext:
+        fsGroup: 101
       containers:
         - name: bind
           image: ubuntu/bind9:9.18-22.04_beta
           resources: {}
           env:
+            - name: BIND9_USER
+              value: root
             - name: DOCKER_LOGS
               value: '1'
             - name: ALLOW_QUERY
@@ -28,3 +32,19 @@ spec:
               value: UTC
           ports:
             - containerPort: 53
+          volumeMounts:
+            - name: config
+              mountPath: /etc/bind/named.conf
+              subPath: named.conf
+            - name: config
+              mountPath: /etc/bind/home.zone
+              subPath: home.zone
+      volumes:
+        - name: config
+          configMap:
+            name: bind-cm
+            items:
+              - key: named.conf
+                path: named.conf
+              - key: home.zone
+                path: home.zone
