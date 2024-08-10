@@ -68,6 +68,19 @@
       become: true
       ufw:
         state: enabled
+        
+    - name: DNS:Disable DNSStubListener
+      become: true
+      replace:
+        path: /etc/systemd/resolved.conf
+        regexp: '#DNSStubListener=yes'
+        replace: 'DNSStubListener=no'
+
+    - name: DNS:Reload systemd-resolved
+      become: true
+      ansible.builtin.systemd_service:
+        name: systemd-resolved.service
+        state: restarted
 
     - name: K3S:Ensure the /etc/rancher/k3s/ directory exists
       become: true

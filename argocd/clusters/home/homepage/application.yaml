@@ -1,12 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: homepage
+  name: my-homepage
   namespace: argocd
+  labels:
+    argocd.sromerotech.home/app: 'true'
+  # finalizers:
+  #   - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  syncPolicy:
-    automated: {}
   destination:
     namespace: default
     server: https://kubernetes.default.svc
@@ -103,3 +105,9 @@ spec:
                 paths:
                   - path: /
                     pathType: Prefix
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
