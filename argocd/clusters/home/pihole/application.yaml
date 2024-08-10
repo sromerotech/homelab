@@ -25,6 +25,13 @@ spec:
             - op: replace
               path: /spec/rules/0/host
               value: pihole.home
+        - target:
+            kind: Service
+            name: pihole
+          patch: |-
+            - op: add
+              path: /spec/clusterIP
+              value: 10.43.228.29
   syncPolicy:
     automated:
       prune: true

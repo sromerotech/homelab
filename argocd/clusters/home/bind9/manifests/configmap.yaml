@@ -7,8 +7,7 @@ data:
   named.conf: |
     options {
       forwarders {
-        8.8.8.8;
-        8.8.4.4;
+        10.43.228.29 port 8124;
       };
     };
 

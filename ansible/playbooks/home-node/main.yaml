@@ -64,14 +64,6 @@
         from: 10.43.0.0/16
         comment: k3s:services
 
-    - name: UFW:k3s:bind9
-      become: true
-      ufw:
-        rule: allow
-        port: 30053
-        from: 192.168.1.0/24
-        comment: UFW:k3s:bind9
-
     - name: UFW:enabled
       become: true
       ufw:
