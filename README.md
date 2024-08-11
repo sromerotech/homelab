@@ -37,3 +37,11 @@ Almost everything needed to set up my personal servers. Inspired by [ChristianLe
 ## Guides
 
 - [Installation](docs/installation.md)
+
+## Media
+
+<p align="center">
+  <img src="docs/resources/homepage.png" alt="homepage"/>
+  <br/>
+  <img src="docs/resources/argocd.png" alt="homepage"/>
+</p>
