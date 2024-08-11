@@ -24,11 +24,16 @@ Almost everything needed to set up my personal servers. Inspired by [ChristianLe
 </p>
 
 <p align="center">
-  <img src="docs/homelab.png" alt="diagram-general"/>
+  <img src="docs/resources/homelab.png" alt="diagram-general"/>
 </p>
 
 ## Current Issues
 
-- DNS `Bind9 -> Pihole` chain makes **Pihole** to register all queries as the same client (`10-42-0-79.bind-service.dns.svc.cluster.local`).
-- **Pihole** seems not to be blocking **custom domains**.
-- `LoadBalancer` services in **K3S** exposes ports on the raspberry despite **UFW** not defining it.
+- [[Bug] Pihole registers all queries from the same client.](https://github.com/sromerotech/homelab/issues/1)
+- [[Bug] Pihole dns blocking doesn't work.](https://github.com/sromerotech/homelab/issues/2)
+- [[Bug] LoadBalance port vs UFW.](https://github.com/sromerotech/homelab/issues/3)
+
+
+## Guides
+
+- [Installation](docs/installation.md)

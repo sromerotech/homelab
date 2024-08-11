@@ -2,6 +2,13 @@
 
 Before deploying this application, create a secret in the target namespace with the env configuration used by pihole.
 
+## Requirements
+
+```bash
+$ kubectl create namespace dns \
+  --kubeconfig /path/to/config.yaml
+```
+
 ```bash
 $ kubectl create secret generic pihole-envars \
   --from-literal=TZ=UTC \

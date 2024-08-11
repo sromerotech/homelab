@@ -22,6 +22,10 @@
           - ufw
           - curl
 
+    - name: COMMON:Reboot the machine
+      become: true
+      reboot:
+
     - name: UFW:Set default incoming policy to deny
       become: true
       ufw:
