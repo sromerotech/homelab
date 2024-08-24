@@ -1,0 +1,5 @@
+# https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/pihole.md
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
