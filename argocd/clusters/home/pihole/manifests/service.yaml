@@ -8,15 +8,15 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - protocol: TCP
+    - name: web
       port: 8123
       targetPort: http
-      name: web
-    - protocol: TCP
-      port: 8124
+      protocol: TCP
+    - name: dns
+      port: 53
       targetPort: dns
-      name: dns
-    - protocol: UDP
-      port: 8124
+      protocol: TCP
+    - name: dns-udp
+      port: 53
       targetPort: dns-udp
-      name: dns-udp
+      protocol: UDP
