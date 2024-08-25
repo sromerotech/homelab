@@ -23,6 +23,10 @@ spec:
             enabled: true
             ingressClassName: traefik
             host: longhorn.home
+          defaultSettings:
+            defaultReplicaCount: 1
+          longhornUI:
+            replicas: 1
   syncPolicy:
     automated:
       prune: true
