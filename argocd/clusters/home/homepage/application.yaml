@@ -78,6 +78,10 @@ spec:
                   icon: longhorn
                   href: http://longhorn.home
                   description: Cluster Persistence
+              - Grafana:
+                  icon: grafana
+                  href: http://grafana.home
+                  description: Cluster Monitoring
             - Internet:
               - Router:
                   icon: mdi-ip
