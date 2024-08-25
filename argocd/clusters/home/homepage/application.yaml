@@ -69,11 +69,15 @@ spec:
                   #   type: homeassistant
                   #   url: http://home-assistant.home-assistant.svc.cluster.local:8123
                   #   key: ...
-            - Devops:  
+            - Infrastructure:
               - ArgoCD:
                   icon: argocd
                   href: http://argocd.home
                   description: Continuous Delivery
+              - Longhorn:
+                  icon: longhorn
+                  href: http://longhorn.home
+                  description: Cluster Persistence
             - Internet:
               - Router:
                   icon: mdi-ip

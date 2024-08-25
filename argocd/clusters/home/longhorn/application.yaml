@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-longhorn
+  namespace: argocd
+  labels:
+    argocd.sromerotech.home/app: 'true'
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  sources:
+    - chart: longhorn
+      repoURL: https://charts.longhorn.io/
+      targetRevision: v1.7.0
+      helm:
+        releaseName: my-homepage
+        valuesObject:
+          preUpgradeChecker:
+            jobEnabled: false
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            host: longhorn.home
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
