@@ -25,6 +25,8 @@ spec:
             host: longhorn.home
           defaultSettings:
             defaultReplicaCount: 1
+            backupTarget: s3://sromerotech-homelab-test@eu-south-2/
+            backupTargetCredentialSecret: aws-secret
           longhornUI:
             replicas: 1
   syncPolicy:
