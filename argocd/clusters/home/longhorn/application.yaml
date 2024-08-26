@@ -29,6 +29,11 @@ spec:
             backupTargetCredentialSecret: aws-secret
           longhornUI:
             replicas: 1
+          csi:
+            snapshotterReplicaCount: 1
+            resizerReplicaCount: 1
+            provisionerReplicaCount: 1
+            attacherReplicaCount: 1
   syncPolicy:
     automated:
       prune: true
