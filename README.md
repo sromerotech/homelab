@@ -43,5 +43,9 @@ Almost everything needed to set up my personal servers. Inspired by [ChristianLe
 <p align="center">
   <img src="docs/resources/homepage.png" alt="homepage"/>
   <br/>
-  <img src="docs/resources/argocd.png" alt="homepage"/>
+  <img src="docs/resources/argocd.png" alt="argocd"/>
+  <br/>
+  <img src="docs/resources/grafana.png" alt="grafana"/>
+  <br/>
+  <img src="docs/resources/longhorn.png" alt="longhorn"/>
 </p>
