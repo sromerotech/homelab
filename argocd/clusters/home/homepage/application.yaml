@@ -36,6 +36,9 @@ spec:
               - Homelab repo:
                 - abbr: GH
                   href: https://github.com/sromerotech/homelab
+              - Boilerplates repo:
+                - abbr: GH
+                  href: https://github.com/sromerotech/boilerplates
             - Social:
               - r/homelab:
                 - abbr: RE
