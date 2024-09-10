@@ -22,7 +22,11 @@ spec:
         controllers:
           main:
             annotations:
-              rollout-trigger: "{{ now | unixEpoch }}"
+              reloader.stakater.com/auto: "true"
+        controller:
+          main:
+            annotations:
+              reloader.stakater.com/auto: "true"
         image:
           repository: ghcr.io/gethomepage/homepage
           tag: latest
@@ -130,8 +134,5 @@ spec:
                   - path: /
                     pathType: Prefix
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true

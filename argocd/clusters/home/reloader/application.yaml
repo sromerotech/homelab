@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-reloader
+  namespace: argocd
+  labels:
+    argocd.sromerotech.home/app: 'true'
+  # finalizers:
+  #   - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: tooling
+    server: https://kubernetes.default.svc
+  source:
+    chart: reloader
+    repoURL: https://stakater.github.io/stakater-charts
+    targetRevision: 1.1.0
+    helm:
+      releaseName: my-reloader
+      valuesObject:
+        reloader:
+          isArgoRollouts: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
