@@ -19,6 +19,10 @@ spec:
     helm:
       releaseName: my-homepage
       valuesObject:
+        controllers:
+          main:
+            annotations:
+              rollout-trigger: "{{ now | unixEpoch }}"
         image:
           repository: ghcr.io/gethomepage/homepage
           tag: latest
