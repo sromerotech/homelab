@@ -39,3 +39,12 @@ apply: plan
     -it \
     ghcr.io/opentofu/opentofu:latest \
     apply "/srv/workspace/main.plan"
+
+destroy:
+	@ docker run --rm \
+		--env-file .env \
+    --workdir=/srv/workspace \
+    --mount type=bind,source=.,target=/srv/workspace \
+    -it \
+    ghcr.io/opentofu/opentofu:latest \
+    destroy

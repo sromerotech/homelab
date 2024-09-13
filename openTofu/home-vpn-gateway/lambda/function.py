@@ -39,7 +39,7 @@ def lambda_handler(event, context):
     instance_status = instance.get('State', {}).get('Name', 'Unknown')
     return {
       "statusCode": 200, 
-      "body": instance_status
+      "body": f"Instance is {instance_status}"
     }
   
   else:

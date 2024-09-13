@@ -19,6 +19,14 @@ spec:
     helm:
       releaseName: my-homepage
       valuesObject:
+        controllers:
+          main:
+            annotations:
+              reloader.stakater.com/auto: "true"
+        controller:
+          main:
+            annotations:
+              reloader.stakater.com/auto: "true"
         image:
           repository: ghcr.io/gethomepage/homepage
           tag: latest
@@ -36,6 +44,9 @@ spec:
               - Homelab repo:
                 - abbr: GH
                   href: https://github.com/sromerotech/homelab
+              - Boilerplates repo:
+                - abbr: GH
+                  href: https://github.com/sromerotech/boilerplates
             - Social:
               - r/homelab:
                 - abbr: RE
@@ -123,8 +134,5 @@ spec:
                   - path: /
                     pathType: Prefix
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
