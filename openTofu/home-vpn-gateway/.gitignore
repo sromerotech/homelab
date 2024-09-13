@@ -1,0 +1,6 @@
+.terraform
+lambda_function.zip
+.env
+main.plan
+*.tfstate
+*.tfstate.*
