@@ -1,3 +1,4 @@
+# Defines the lambda function from the source code
 resource "aws_lambda_function" "home_vpn_api" {
   function_name    = "homeVPNApi"
   role             = aws_iam_role.lambda_execution_role.arn
@@ -16,6 +17,7 @@ resource "aws_lambda_function" "home_vpn_api" {
   # depends_on = [null_resource.zip_lambda_function]
 }
 
+# Grants execution permissions to AWS Gateway
 resource "aws_lambda_permission" "api_gateway_invoke" {
   statement_id  = "AllowExecutionFromApiGateway"
   action        = "lambda:InvokeFunction"

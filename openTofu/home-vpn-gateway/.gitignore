@@ -1,6 +1,7 @@
 .terraform
 lambda_function.zip
 .env
-main.plan
+*.plan
 *.tfstate
 *.tfstate.*
+*.tfstate.backup
