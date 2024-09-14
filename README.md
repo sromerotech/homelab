@@ -9,6 +9,9 @@ Almost everything needed to set up my personal servers. Inspired by [ChristianLe
     <a alt="Ansible">
       <img src="https://img.shields.io/badge/Ansible-000000?style=flat&logo=ansible&logoColor=white" />
     </a>
+    <a alt="OpenTofu">
+      <img src="https://img.shields.io/badge/OpenTofu-ffe600?style=flat&logo=opentofu&logoColor=black" />
+    </a>
     <a alt="Kubernetes">
       <img src="https://img.shields.io/badge/Kubernetes-326ce5?style=flat&logo=kubernetes&logoColor=white" />
     </a>

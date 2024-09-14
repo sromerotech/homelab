@@ -10,8 +10,8 @@ init:
     init
 
 zip:
-	@ rm lambda_function.zip
-	@ cd lambda && zip -r ../lambda_function.zip function.py
+	@ rm -f lambda_function.zip
+	@ cd lambda && zip -r ../lambda_function.zip index.js
 
 plan: zip
 	@ docker run --rm \

@@ -2,8 +2,8 @@
 resource "aws_lambda_function" "home_vpn_api" {
   function_name    = "homeVPNApi"
   role             = aws_iam_role.lambda_execution_role.arn
-  handler          = "function.lambda_handler"
-  runtime          = "python3.9"
+  handler          = "index.handler"
+  runtime          = "nodejs18.x"
   filename         = "${path.module}/lambda_function.zip"
   source_code_hash = filebase64sha256("${path.module}/lambda_function.zip")
 
