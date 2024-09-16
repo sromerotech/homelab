@@ -61,6 +61,10 @@ spec:
               - YouTube:
                 - abbr: YT
                   href: https://youtube.com/
+            - Homelab:
+              - Grafana Last 15 days:
+                - abbr: GR
+                  href: 'http://grafana.home/d/1bI4P-xiz/kubernetes-views-k3s-cluster?orgId=1&refresh=5s&var-DS_PROMETHEUS=prometheus&var-k8s_version=v1.29.5%2Bk3s1&var-resolution=5m&from=now-15d&to=now'
           kubernetes:
             mode: cluster
           settings:
