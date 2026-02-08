@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-home-assistant
+  namespace: argocd
+  labels:
+    argocd.sromerotech.home/app: 'true'
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: home-automation
+    server: https://kubernetes.default.svc
+  source:
+    path: argocd/apps/home-assistant/manifests
+    repoURL: 'git@github.com:sromerotech/homelab.git'
+    targetRevision: main
+    kustomize:
+      images:
+        - ghcr.io/home-assistant/home-assistant:2026.2.1
+      patches:
+        - target:
+            kind: Ingress
+            name: home-assistant
+          patch: |-
+            - op: replace
+              path: /spec/rules/0/host
+              value: ha.home
+        - target:
+            kind: ConfigMap
+            name: home-assistant-config
+          patch: |-
+            - op: replace
+              path: /data/TZ
+              value: "Europe/Madrid"
+        - target:
+            kind: PersistentVolumeClaim
+            name: home-assistant-config-root
+          patch: |-
+            - op: replace
+              path: /spec/storageClassName
+              value: "local-path"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

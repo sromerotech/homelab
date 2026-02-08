@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  repo: https://argoproj.github.io/argo-helm
+  chart: argo-cd
+  targetNamespace: argocd
+  valuesContent: |-
+    configs:
+      params:
+        server.insecure: true
+      cm:
+        helm.valuesFileSchemes: >-
+          secrets+gpg-import, secrets+gpg-import-kubernetes,
+          secrets+age-import, secrets+age-import-kubernetes,
+          secrets, secrets+literal,
+          https
+    global:
+      domain: argocd.home
+    server:
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+    repoServer:
+      env:
+        - name: HELM_PLUGINS
+          value: /gitops-tools/helm-plugins/
+        - name: HELM_SECRETS_CURL_PATH
+          value: /gitops-tools/curl
+        - name: HELM_SECRETS_SOPS_PATH
+          value: /gitops-tools/sops
+        - name: HELM_SECRETS_VALS_PATH
+          value: /gitops-tools/vals
+        - name: HELM_SECRETS_KUBECTL_PATH
+          value: /gitops-tools/kubectl
+        - name: HELM_SECRETS_BACKEND
+          value: sops
+        # https://github.com/jkroepke/helm-secrets/wiki/Security-in-shared-environments
+        - name: HELM_SECRETS_VALUES_ALLOW_SYMLINKS
+          value: "false"
+        - name: HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH
+          value: "true"
+        - name: HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL
+          value: "false"
+        - name: HELM_SECRETS_WRAPPER_ENABLED
+          value: "true"
+        - name: HELM_SECRETS_DECRYPT_SECRETS_IN_TMP_DIR
+          value: "true"
+        - name: HELM_SECRETS_HELM_PATH
+          value: /usr/local/bin/helm
+
+        - name: SOPS_AGE_KEY_FILE # For age
+          value: /helm-secrets-private-keys/key.txt
+      volumes:
+        - name: gitops-tools
+          emptyDir: {}
+        # kubectl create secret generic helm-secrets-private-keys --from-file=key.txt=path/to/age.txt
+        - name: helm-secrets-private-keys
+          secret:
+            secretName: helm-secrets-private-keys
+      volumeMounts:
+        - mountPath: /gitops-tools
+          name: gitops-tools
+        - mountPath: /usr/local/sbin/helm
+          subPath: helm
+          name: gitops-tools
+        - mountPath: /helm-secrets-private-keys/
+          name: helm-secrets-private-keys
+      initContainers:
+        - name: download-tools
+          image: alpine:latest
+          imagePullPolicy: IfNotPresent
+          command: [sh, -ec]
+          env:
+            - name: HELM_SECRETS_VERSION
+              value: "4.7.4"
+            - name: KUBECTL_VERSION
+              value: "1.34.3"
+            - name: SOPS_VERSION
+              value: "3.11.0"
+          args:
+            - |-
+              set -euxo pipefail
+
+              mkdir -p /gitops-tools /gitops-tools/helm-plugins
+
+              ARCH="$(uname -m)"
+              case "$ARCH" in
+                x86_64)
+                  K8S_ARCH=amd64
+                  CURL_ARCH=x86_64
+                  ;;
+                aarch64|arm64)
+                  K8S_ARCH=arm64
+                  CURL_ARCH=aarch64
+                  ;;
+                armv7l|armv7*)
+                  K8S_ARCH=arm
+                  CURL_ARCH=armv7
+                  ;;
+                *)
+                  echo "Unsupported arch: $ARCH" >&2
+                  exit 1
+                  ;;
+              esac
+
+              # Sanity checks (fail fast with clear 404s)
+              wget -S --spider "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${K8S_ARCH}/kubectl"
+              wget -S --spider "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${K8S_ARCH}"
+              wget -S --spider "https://github.com/jkroepke/helm-secrets/releases/download/v${HELM_SECRETS_VERSION}/helm-secrets.tar.gz"
+
+              # Static curl: use stunnel/static-curl (moparisthebest/latest has been 404 on aarch64)
+              CURL_TAG_URL="$(
+                wget -S --spider https://github.com/stunnel/static-curl/releases/latest 2>&1 \
+                  | awk '/^  Location: /{print $2}' \
+                  | tail -n1 \
+                  | tr -d '\r'
+              )"
+              CURL_TAG="${CURL_TAG_URL##*/}"     # e.g. v8.17.0 or 8.17.0
+              CURL_VER="${CURL_TAG#v}"           # e.g. 8.17.0
+              CURL_ASSET="curl-linux-${CURL_ARCH}-musl-${CURL_VER}.tar.xz"
+
+              wget -S --spider "https://github.com/stunnel/static-curl/releases/download/${CURL_TAG}/${CURL_ASSET}"
+
+              tmp="$(mktemp -d)"
+              wget -qO "${tmp}/${CURL_ASSET}" "https://github.com/stunnel/static-curl/releases/download/${CURL_TAG}/${CURL_ASSET}"
+              tar -xJf "${tmp}/${CURL_ASSET}" -C "${tmp}"
+
+              CURL_BIN="$(find "${tmp}" -type f -name curl -perm -u+x | head -n1)"
+              test -n "${CURL_BIN}" || { echo "curl binary not found after extracting ${CURL_ASSET}" >&2; exit 1; }
+
+              cp "${CURL_BIN}" /gitops-tools/curl
+              rm -rf "${tmp}"
+
+              # Tools
+              wget -qO /gitops-tools/kubectl "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${K8S_ARCH}/kubectl"
+              wget -qO /gitops-tools/sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${K8S_ARCH}"
+
+              # Helm Secrets plugin
+              wget -qO- "https://github.com/jkroepke/helm-secrets/releases/download/v${HELM_SECRETS_VERSION}/helm-secrets.tar.gz" \
+                | tar -C /gitops-tools/helm-plugins -xzf -
+
+              chmod +x /gitops-tools/*
+              cp /gitops-tools/helm-plugins/helm-secrets/scripts/wrapper/helm.sh /gitops-tools/helm
+
+          volumeMounts:
+            - mountPath: /gitops-tools
+              name: gitops-tools
+              
