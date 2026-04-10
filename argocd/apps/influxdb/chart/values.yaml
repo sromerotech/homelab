@@ -1,0 +1,26 @@
+influxdb2:
+  image:
+    repository: public.ecr.aws/docker/library/influxdb
+    tag: "2.7"
+
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 20Gi
+
+  service:
+    type: ClusterIP
+    port: 8086
+
+  ingress:
+    enabled: true
+    className: traefik
+    hostname: influxdb.home
+    annotations: {}
+    tls: false
+
+  adminUser:
+    organization: homelab
+    bucket: homelab
+    retention_policy: "0s"
+    user: admin

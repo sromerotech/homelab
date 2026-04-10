@@ -27,6 +27,13 @@ spec:
         envFrom:
           - configMapRef:
               name: home-assistant-config
+        env:
+           # Manually created
+          - name: INFLUXDB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: home-assistant-influxdb
+                key: INFLUXDB_TOKEN
         ports:
           - name: http
             containerPort: 8123

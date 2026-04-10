@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-init-homeassistant-bucket
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-bucket
+          image: public.ecr.aws/docker/library/influxdb:2.7
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              HOST="http://{{ .Release.Name }}-influxdb2.{{ .Release.Namespace }}.svc.cluster.local:8086"
+              until influx ping --host "${HOST}"; do
+                echo "Waiting for InfluxDB..."
+                sleep 5
+              done
+              if influx bucket list --host "${HOST}" --token "${ADMIN_TOKEN}" \
+                  --org homelab --name homeassistant 2>/dev/null | grep -q homeassistant; then
+                echo "Bucket 'homeassistant' already exists, skipping."
+              else
+                influx bucket create --host "${HOST}" --token "${ADMIN_TOKEN}" \
+                  --org homelab --name homeassistant --retention 4380h
+                echo "Bucket 'homeassistant' created."
+              fi
+          env:
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-influxdb2-auth
+                  key: admin-token

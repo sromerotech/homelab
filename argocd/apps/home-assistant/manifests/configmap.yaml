@@ -10,3 +10,15 @@ data:
         - 10.42.0.0/16
         - 10.43.0.0/16
     mobile_app:
+    influxdb:
+      api_version: 2
+      host: influxdb-influxdb2.monitoring.svc.cluster.local
+      port: 8086
+      ssl: false
+      token: !env_var INFLUXDB_TOKEN
+      organization: homelab
+      bucket: homeassistant
+      include:
+        entity_globs:
+          - sensor.*temperature*
+          - sensor.*humidity*
