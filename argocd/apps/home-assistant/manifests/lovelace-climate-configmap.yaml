@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: home-assistant-lovelace-climate
+data:
+  climate.yaml: |
+    title: Climate
+    views:
+      - title: Home
+        path: home
+        panel: true
+        cards:
+          - type: vertical-stack
+            cards:
+              - type: iframe
+                title: Temperatures
+                url: http://grafana.home/d-solo/home-climate/home-climate?panelId=1&kiosk&theme=dark&refresh=30s
+                aspect_ratio: 40%
+              - type: iframe
+                title: Humidities
+                url: http://grafana.home/d-solo/home-climate/home-climate?panelId=2&kiosk&theme=dark&refresh=30s
+                aspect_ratio: 40%

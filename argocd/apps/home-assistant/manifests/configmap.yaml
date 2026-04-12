@@ -18,7 +18,18 @@ data:
       token: !env_var INFLUXDB_TOKEN
       organization: homelab
       bucket: homeassistant
+      tags_attributes:
+        - friendly_name
       include:
         entity_globs:
           - sensor.*temperature*
           - sensor.*humidity*
+    lovelace:
+      mode: storage
+      dashboards:
+        lovelace-climate:
+          mode: yaml
+          title: Climate
+          icon: mdi:thermometer
+          show_in_sidebar: true
+          filename: dashboards/climate.yaml

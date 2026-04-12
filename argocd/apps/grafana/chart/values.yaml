@@ -1,0 +1,67 @@
+grafana:
+  image:
+    repository: grafana/grafana
+    tag: "11.3.0"
+
+  adminUser: admin
+  # adminPassword is set in secrets.yaml (SOPS-encrypted)
+
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 2Gi
+
+  service:
+    type: ClusterIP
+
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - grafana.home
+    tls: []
+
+  # Inject the InfluxDB admin token as an env var for the datasource provisioning
+  envValueFrom:
+    INFLUXDB_TOKEN:
+      secretKeyRef:
+        name: influxdb-influxdb2-auth
+        key: admin-token
+
+  grafana.ini:
+    server:
+      root_url: http://grafana.home/
+    security:
+      allow_embedding: true
+      cookie_samesite: lax
+    auth.anonymous:
+      enabled: true
+      org_name: Main Org.
+      org_role: Viewer
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: InfluxDB
+          type: influxdb
+          uid: influxdb
+          url: http://influxdb-influxdb2.monitoring.svc.cluster.local:8086
+          access: proxy
+          isDefault: true
+          jsonData:
+            version: Flux
+            organization: homelab
+            defaultBucket: homeassistant
+            tlsSkipVerify: true
+          secureJsonData:
+            token: ${INFLUXDB_TOKEN}
+
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      folder: /tmp/dashboards
+      provider:
+        foldersFromFilesStructure: true
