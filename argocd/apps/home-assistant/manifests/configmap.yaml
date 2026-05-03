@@ -4,6 +4,7 @@ metadata:
   name: home-assistant-config-file
 data:
   configuration.yaml: |
+    automation: !include_dir_merge_list automations/
     http:
       use_x_forwarded_for: true
       trusted_proxies:

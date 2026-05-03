@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: home-assistant-automations
+data:
+  wifi_gondor.yaml: |
+    - alias: WiFi Gondor Schedule
+      description: Enable WiFi on Fridays 07:00 to 18:00
+      mode: single
+      triggers:
+        - trigger: time
+          at: "07:00:00"
+          id: turn_on
+        - trigger: time
+          at: "18:00:00"
+          id: turn_off
+      conditions: []
+      actions:
+        - choose:
+            - conditions:
+                - condition: time
+                  weekday:
+                    - fri
+                - condition: trigger
+                  id: turn_on
+              sequence:
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.gondor
+            - conditions:
+                - condition: time
+                  weekday:
+                    - fri
+                - condition: trigger
+                  id: turn_off
+              sequence:
+                - action: switch.turn_off
+                  target:
+                    entity_id: switch.gondor

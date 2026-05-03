@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-backup
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: public.ecr.aws/docker/library/influxdb:2.7
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -e
+                  HOST="http://{{ .Release.Name }}-influxdb2.{{ .Release.Namespace }}.svc.cluster.local:8086"
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  BACKUP_DIR="/tmp/influxdb-backup-${TIMESTAMP}"
+
+                  echo "Starting InfluxDB backup..."
+                  influx backup "${BACKUP_DIR}" \
+                    --host "${HOST}" \
+                    --token "${INFLUXDB_TOKEN}"
+
+                  echo "Installing AWS CLI..."
+                  apt-get update -qq && apt-get install -y -qq awscli > /dev/null
+
+                  echo "Uploading to S3..."
+                  aws s3 cp "${BACKUP_DIR}" \
+                    "s3://${S3_BUCKET}/influxdb/${TIMESTAMP}/" \
+                    --recursive \
+                    --endpoint-url "${S3_ENDPOINT}"
+
+                  echo "Cleaning up old backups (keeping last ${BACKUP_RETENTION_DAYS} days)..."
+                  CUTOFF=$(date -d "-${BACKUP_RETENTION_DAYS} days" +%Y%m%d)
+                  aws s3 ls "s3://${S3_BUCKET}/influxdb/" \
+                    --endpoint-url "${S3_ENDPOINT}" \
+                    | awk '{print $2}' | tr -d '/' \
+                    | while read dir; do
+                        DIR_DATE=$(echo "${dir}" | cut -d'-' -f1-3 | tr -d '-')
+                        if [ "${DIR_DATE}" -lt "${CUTOFF}" ] 2>/dev/null; then
+                          echo "Deleting old backup: ${dir}"
+                          aws s3 rm "s3://${S3_BUCKET}/influxdb/${dir}/" \
+                            --recursive --endpoint-url "${S3_ENDPOINT}"
+                        fi
+                      done
+
+                  echo "Backup complete: ${TIMESTAMP}"
+              env:
+                - name: INFLUXDB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Release.Name }}-influxdb2-auth
+                      key: admin-token
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: influxdb-backup-s3
+                      key: access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: influxdb-backup-s3
+                      key: secret-access-key
+                - name: S3_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: influxdb-backup-s3
+                      key: endpoint
+                - name: S3_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: influxdb-backup-s3
+                      key: bucket
+                - name: BACKUP_RETENTION_DAYS
+                  value: "30"
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "512Mi"

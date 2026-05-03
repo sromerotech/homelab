@@ -69,6 +69,8 @@ spec:
           - name: ha-lovelace-climate
             mountPath: /config/dashboards/climate.yaml
             subPath: climate.yaml
+          - name: ha-automations
+            mountPath: /config/automations
           - name: zigbee
             mountPath: /dev/ttyACM0
       restartPolicy: Always
@@ -88,6 +90,9 @@ spec:
             items:
               - key: climate.yaml
                 path: climate.yaml
+        - name: ha-automations
+          configMap:
+            name: home-assistant-automations
         - name: zigbee
           hostPath:
             path: /dev/ttyACM0
