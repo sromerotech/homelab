@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: route53-ddns
+  namespace: aws-scripts
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: ddns-updater
+              image: amazon/aws-cli:latest
+              command: ["/bin/bash", "/scripts/update.sh"]
+              envFrom:
+                - configMapRef:
+                    name: route53-ddns-config
+                - secretRef:
+                    name: aws-credentials
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+          volumes:
+            - name: script
+              configMap:
+                name: route53-ddns-script
+                defaultMode: 0555

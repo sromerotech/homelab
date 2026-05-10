@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - configmap.yaml
+  - cronjob.yaml
+commonLabels:
+  app.kubernetes.io/name: route53-ddns
+  app: route53-ddns
