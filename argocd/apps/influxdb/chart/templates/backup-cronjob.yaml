@@ -63,22 +63,22 @@ spec:
                 - name: AWS_ACCESS_KEY_ID
                   valueFrom:
                     secretKeyRef:
-                      name: influxdb-backup-s3
+                      name: "scaleway-app.homelab"
                       key: access-key-id
                 - name: AWS_SECRET_ACCESS_KEY
                   valueFrom:
                     secretKeyRef:
-                      name: influxdb-backup-s3
+                      name: "scaleway-app.homelab"
                       key: secret-access-key
                 - name: S3_ENDPOINT
                   valueFrom:
                     secretKeyRef:
-                      name: influxdb-backup-s3
+                      name: "scaleway-app.homelab"
                       key: endpoint
                 - name: S3_BUCKET
                   valueFrom:
                     secretKeyRef:
-                      name: influxdb-backup-s3
+                      name: "scaleway-app.homelab"
                       key: bucket
                 - name: BACKUP_RETENTION_DAYS
                   value: "30"
