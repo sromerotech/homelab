@@ -35,20 +35,20 @@ spec:
 
                   echo "Uploading to S3..."
                   aws s3 cp "${BACKUP_DIR}" \
-                    "s3://${S3_BUCKET}/influxdb/${TIMESTAMP}/" \
+                    "s3://${S3_BUCKET}/influxdb/backups/${TIMESTAMP}/" \
                     --recursive \
                     --endpoint-url "${S3_ENDPOINT}"
 
                   echo "Cleaning up old backups (keeping last ${BACKUP_RETENTION_DAYS} days)..."
                   CUTOFF=$(date -d "-${BACKUP_RETENTION_DAYS} days" +%Y%m%d)
-                  aws s3 ls "s3://${S3_BUCKET}/influxdb/" \
+                  aws s3 ls "s3://${S3_BUCKET}/influxdb/backups/" \
                     --endpoint-url "${S3_ENDPOINT}" \
                     | awk '{print $2}' | tr -d '/' \
                     | while read dir; do
                         DIR_DATE=$(echo "${dir}" | cut -d'-' -f1-3 | tr -d '-')
                         if [ "${DIR_DATE}" -lt "${CUTOFF}" ] 2>/dev/null; then
                           echo "Deleting old backup: ${dir}"
-                          aws s3 rm "s3://${S3_BUCKET}/influxdb/${dir}/" \
+                          aws s3 rm "s3://${S3_BUCKET}/influxdb/backups/${dir}/" \
                             --recursive --endpoint-url "${S3_ENDPOINT}"
                         fi
                       done
@@ -70,6 +70,11 @@ spec:
                     secretKeyRef:
                       name: "scaleway-app.homelab"
                       key: secret-access-key
+                - name: AWS_DEFAULT_REGION
+                  valueFrom:
+                    secretKeyRef:
+                      name: "scaleway-app.homelab"
+                      key: region
                 - name: S3_ENDPOINT
                   valueFrom:
                     secretKeyRef:
