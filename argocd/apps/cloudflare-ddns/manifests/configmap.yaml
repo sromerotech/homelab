@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-ddns-config
+  namespace: cloudflare-scripts
+data:
+  RECORD_TTL: "300"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-ddns-script
+  namespace: cloudflare-scripts
+data:
+  update.sh: |
+    #!/usr/bin/env sh
+    set -eu
+
+    apk add --no-cache curl jq >/dev/null
+
+    # Resolve public IP, falling back to a second provider if the first fails
+    PUBLIC_IP=""
+    for url in "https://checkip.amazonaws.com" "https://api.ipify.org"; do
+      PUBLIC_IP=$(curl -sf --max-time 10 "$url" | tr -d '[:space:]') && break || true
+    done
+    if [ -z "$PUBLIC_IP" ]; then
+      echo "[ERROR] Could not determine public IP" >&2
+      exit 1
+    fi
+    echo "[INFO] Public IP: $PUBLIC_IP"
+
+    API="https://api.cloudflare.com/client/v4"
+
+    # Look up the existing A record (source of truth, no local state)
+    RESP=$(curl -sf --max-time 10 \
+      -H "Authorization: Bearer ${CF_API_TOKEN}" \
+      -H "Content-Type: application/json" \
+      "${API}/zones/${ZONE_ID}/dns_records?type=A&name=${RECORD_NAME}")
+
+    RECORD_ID=$(echo "$RESP" | jq -r '.result[0].id // empty')
+    CURRENT_IP=$(echo "$RESP" | jq -r '.result[0].content // empty')
+
+    echo "[INFO] Cloudflare current value: ${CURRENT_IP:-"(not found)"}"
+
+    if [ "$PUBLIC_IP" = "$CURRENT_IP" ]; then
+      echo "[INFO] No change needed."
+      exit 0
+    fi
+
+    BODY=$(jq -n \
+      --arg name "$RECORD_NAME" \
+      --arg ip "$PUBLIC_IP" \
+      --argjson ttl "$RECORD_TTL" \
+      '{type: "A", name: $name, content: $ip, ttl: $ttl, proxied: false}')
+
+    if [ -n "$RECORD_ID" ]; then
+      # Record exists: update it
+      WRITE=$(curl -s --max-time 10 -X PUT \
+        -H "Authorization: Bearer ${CF_API_TOKEN}" \
+        -H "Content-Type: application/json" \
+        "${API}/zones/${ZONE_ID}/dns_records/${RECORD_ID}" \
+        --data "$BODY")
+    else
+      # Record missing: create it
+      WRITE=$(curl -s --max-time 10 -X POST \
+        -H "Authorization: Bearer ${CF_API_TOKEN}" \
+        -H "Content-Type: application/json" \
+        "${API}/zones/${ZONE_ID}/dns_records" \
+        --data "$BODY")
+    fi
+
+    if [ "$(echo "$WRITE" | jq -r '.success')" != "true" ]; then
+      echo "[ERROR] Cloudflare API rejected the write:" >&2
+      echo "$WRITE" | jq -r '.errors' >&2
+      exit 1
+    fi
+
+    echo "[INFO] Updated ${RECORD_NAME}: ${CURRENT_IP:-"(none)"} -> ${PUBLIC_IP}"
