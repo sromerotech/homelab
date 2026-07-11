@@ -45,7 +45,7 @@ spec:
                     --endpoint-url "${S3_ENDPOINT}" \
                     | awk '{print $2}' | tr -d '/' \
                     | while read dir; do
-                        DIR_DATE=$(echo "${dir}" | cut -d'-' -f1-3 | tr -d '-')
+                        DIR_DATE=$(echo "${dir}" | cut -d'-' -f1)
                         if [ "${DIR_DATE}" -lt "${CUTOFF}" ] 2>/dev/null; then
                           echo "Deleting old backup: ${dir}"
                           aws s3 rm "s3://${S3_BUCKET}/influxdb/backups/${dir}/" \
