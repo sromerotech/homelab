@@ -13,7 +13,7 @@ spec:
       backoffLimit: 2
       template:
         spec:
-          restartPolicy: OnFailure
+          restartPolicy: Never
           containers:
             - name: backup
               image: public.ecr.aws/docker/library/influxdb:2.7
@@ -22,10 +22,13 @@ spec:
                 - |
                   set -e
                   HOST="http://{{ .Release.Name }}-influxdb2.{{ .Release.Namespace }}.svc.cluster.local:8086"
+                  ORG="homelab"
                   TIMESTAMP=$(date +%Y%m%d-%H%M%S)
                   BACKUP_DIR="/tmp/influxdb-backup-${TIMESTAMP}"
+                  DAILY_PREFIX="influxdb/backups/daily"
+                  QUARTERLY_PREFIX="influxdb/backups/quarterly"
 
-                  echo "Starting InfluxDB backup..."
+                  echo "Starting InfluxDB full backup..."
                   influx backup "${BACKUP_DIR}" \
                     --host "${HOST}" \
                     --token "${INFLUXDB_TOKEN}"
@@ -33,25 +36,52 @@ spec:
                   echo "Installing AWS CLI..."
                   apt-get update -qq && apt-get install -y -qq awscli > /dev/null
 
-                  echo "Uploading to S3..."
+                  echo "Uploading full backup to S3..."
                   aws s3 cp "${BACKUP_DIR}" \
-                    "s3://${S3_BUCKET}/influxdb/backups/${TIMESTAMP}/" \
+                    "s3://${S3_BUCKET}/${DAILY_PREFIX}/${TIMESTAMP}/" \
                     --recursive \
                     --endpoint-url "${S3_ENDPOINT}"
 
-                  echo "Cleaning up old backups (keeping last ${BACKUP_RETENTION_DAYS} days)..."
+                  echo "Cleaning up daily backups older than ${BACKUP_RETENTION_DAYS} days..."
                   CUTOFF=$(date -d "-${BACKUP_RETENTION_DAYS} days" +%Y%m%d)
-                  aws s3 ls "s3://${S3_BUCKET}/influxdb/backups/" \
+                  aws s3 ls "s3://${S3_BUCKET}/${DAILY_PREFIX}/" \
                     --endpoint-url "${S3_ENDPOINT}" \
                     | awk '{print $2}' | tr -d '/' \
-                    | while read dir; do
+                    | while read -r dir; do
                         DIR_DATE=$(echo "${dir}" | cut -d'-' -f1)
+                        [ -z "${DIR_DATE}" ] && continue
                         if [ "${DIR_DATE}" -lt "${CUTOFF}" ] 2>/dev/null; then
                           echo "Deleting old backup: ${dir}"
-                          aws s3 rm "s3://${S3_BUCKET}/influxdb/backups/${dir}/" \
+                          aws s3 rm "s3://${S3_BUCKET}/${DAILY_PREFIX}/${dir}/" \
                             --recursive --endpoint-url "${S3_ENDPOINT}"
                         fi
                       done
+
+                  echo "Exporting quarter-to-date history (read-only Flux query, no writes to production)..."
+                  YEAR=$(date +%Y)
+                  MONTH=$(date +%m)
+                  MONTH=${MONTH#0}
+                  QUARTER=$(( (MONTH - 1) / 3 + 1 ))
+                  QUARTER_KEY="${YEAR}-Q${QUARTER}"
+                  QSTART_MONTH=$(( (QUARTER - 1) * 3 + 1 ))
+                  QUARTER_START=$(printf '%04d-%02d-01T00:00:00Z' "${YEAR}" "${QSTART_MONTH}")
+
+                  for BUCKET in homelab homeassistant; do
+                    echo "Exporting ${BUCKET} (${QUARTER_START} .. now) as ${QUARTER_KEY}..."
+                    influx query \
+                      --host "${HOST}" \
+                      --org "${ORG}" \
+                      --token "${INFLUXDB_TOKEN}" \
+                      --raw \
+                      "from(bucket: \"${BUCKET}\") |> range(start: ${QUARTER_START})" \
+                      > "/tmp/${BUCKET}-${QUARTER_KEY}.csv"
+
+                    gzip -f "/tmp/${BUCKET}-${QUARTER_KEY}.csv"
+
+                    aws s3 cp "/tmp/${BUCKET}-${QUARTER_KEY}.csv.gz" \
+                      "s3://${S3_BUCKET}/${QUARTERLY_PREFIX}/${QUARTER_KEY}/${BUCKET}.csv.gz" \
+                      --endpoint-url "${S3_ENDPOINT}"
+                  done
 
                   echo "Backup complete: ${TIMESTAMP}"
               env:

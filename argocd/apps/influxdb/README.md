@@ -80,7 +80,7 @@ sops argocd/apps/influxdb/chart/secrets.yaml
 **Scaleway S3 credentials for the backup CronJob:**
 
 ```bash
-kubectl create secret generic scaleway-app \
+kubectl create secret generic scaleway-app.homelab \
   --namespace monitoring \
   --from-literal=access-key-id='<SCW_ACCESS_KEY>' \
   --from-literal=secret-access-key='<SCW_SECRET_KEY>' \
@@ -111,3 +111,20 @@ Watch it:
 kubectl get jobs -n monitoring -w
 kubectl logs -n monitoring -l app=influxdb-backup --tail=50
 ```
+
+New backups land under `s3://<bucket-name>/influxdb/backups/daily/<timestamp>/`.
+
+## Retention
+
+The backup CronJob writes two independent, differently-shaped backups so recent data is cheaply restorable while full history is never lost:
+
+- **Daily** (`influxdb/backups/daily/<timestamp>/`): a full binary `influx backup` snapshot of the whole instance, kept for `BACKUP_RETENTION_DAYS` (30) days then deleted. Restore with `influx restore` — this is the fast, exact path for recovering from something that happened recently.
+- **Quarterly** (`influxdb/backups/quarterly/<YYYY>-Q<N>/<bucket>.csv.gz`): every day, a read-only Flux query (`from(bucket: "...") |> range(start: <start of current quarter>)`) exports each bucket's quarter-to-date data as annotated CSV, gzipped, and uploaded to a fixed key for that bucket+quarter. Uploading to the same key each day simply overwrites the previous day's file, so there's never more than one object per bucket per quarter — no separate cleanup step needed. Once the calendar quarter changes, the CronJob starts writing to a new key, so the previous quarter's last-written file is never touched again and becomes that quarter's permanent historic record.
+
+This export never writes to or deletes anything in production — it's a plain query. It's also why the `homeassistant` bucket's data (which InfluxDB itself expires after `4380h` / ~6 months, per `init-bucket-job.yaml`) doesn't get lost: it's captured into the quarterly export the same day it's written, long before InfluxDB's own retention would prune it.
+
+Restoring a quarterly archive: `gunzip` the file, then `influx write --bucket <target> --org homelab --token <token> --format csv --file <file> --host <host>`.
+
+The CSV format is also the more useful one for the eventual move to a more powerful (e.g. cloud-backed) analytics system — it's directly readable by standard tooling without needing an InfluxDB instance to unpack it first.
+
+Backups created before this tiering was introduced live under the old flat `influxdb/backups/<timestamp>/` prefix. They are not touched, deleted, or reorganized by the current script — they're legacy and can be migrated manually if desired.
